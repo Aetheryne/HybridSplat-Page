@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HybridSplat: Fast Reflection-baked Gaussian Tracing using Hybrid Splatting</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Noto Sans Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- MathJax for Equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Noto Sans', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #2563eb, #9333ea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-bg {
+            background: radial-gradient(circle at top right, #eff6ff, #ffffff);
+        }
+        /* Custom scrollbar for galleries */
+        .gallery-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .gallery-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .gallery-scroll::-webkit-scrollbar-thumb {
+            background: #c7c7c7;
+            border-radius: 4px;
+        }
+        .gallery-scroll::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-800">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0 font-bold text-xl tracking-tighter cursor-pointer hover:opacity-80 transition" onclick="window.scrollTo(0,0)">
+                    <span class="gradient-text">HybridSplat</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#abstract" class="text-gray-600 hover:text-blue-600 transition font-medium">Abstract</a>
+                    <a href="#video" class="text-gray-600 hover:text-blue-600 transition font-medium">Video</a>
+                    <a href="#method" class="text-gray-600 hover:text-blue-600 transition font-medium">Method</a>
+                    <a href="#results" class="text-gray-600 hover:text-blue-600 transition font-medium">Results</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="hero-bg pt-20 pb-16 text-center px-4">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-4xl md:text-6xl font-extrabold mb-8 leading-tight tracking-tight">
+                <span class="gradient-text">HybridSplat</span>: Fast Reflection-baked Gaussian Tracing using Hybrid Splatting
+            </h1>
+            
+            <!-- <div class="flex flex-wrap justify-center gap-x-8 gap-y-2 text-lg mb-8 text-blue-600 font-medium">
+                <span class="hover:underline cursor-pointer">Anonymous Authors</span>
+            </div> -->
+
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-lg mb-4 text-blue-600 font-medium">
+                <a href="https://github.com/Aetheryne" target="_blank" rel="noopener noreferrer" class="hover:underline hover:text-blue-800 transition relative">Chang Liu<sup>1</sup></a>
+                <a href="https://github.com/shenlongld" target="_blank" rel="noopener noreferrer" class="hover:underline hover:text-blue-800 transition relative">Sichao Wang<sup>1</sup></a>
+                <a href="https://jianweiguo.net/" target="_blank" rel="noopener noreferrer" class="hover:underline hover:text-blue-800 transition relative">Jianwei Guo<sup>1</sup></a>
+                <a href="https://shishenghuang.github.io/index/" target="_blank" rel="noopener noreferrer" class="hover:underline hover:text-blue-800 transition relative">Shi-Sheng Huang<sup>1</sup></a>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm md:text-base text-gray-600 mb-10">
+                <div class="flex items-center">
+                    <span class="font-bold mr-1"><sup>1</sup></span> Beijing Normal University
+                </div>
+            </div>
+            
+
+            <!-- Links -->
+            <div class="flex justify-center gap-4 mb-12">
+                <span class="flex items-center gap-2 bg-gray-200 text-gray-500 px-6 py-3 rounded-full cursor-not-allowed" aria-disabled="true">
+                    <i class="fa-regular fa-file-pdf"></i>
+                    <span>Paper coming soon</span>
+                </span>
+                <span class="flex items-center gap-2 bg-gray-200 text-gray-500 px-6 py-3 rounded-full cursor-not-allowed" aria-disabled="true">
+                    <i class="fa-brands fa-github"></i>
+                    <span>Code coming soon</span>
+                </span>
+            </div>
+
+            <!-- Introduction Image -->
+            <div class="max-w-5xl mx-auto mb-10">
+                <div class="bg-gray-100 rounded-2xl overflow-hidden shadow-2xl border border-gray-300">
+                    <img src="intro.webp" alt="HybridSplat Introduction Figure" class="w-full h-auto">
+                </div>
+                <p class="mt-4 text-sm text-gray-500 italic text-center w-full">
+                    <strong>Figure 1: The novel view rendering results of our HybridSplat
+                    (left) and performance comparison with different 3D Gaussian
+                    splatting approaches (right).</strong>
+                    As ray-tracing based 3DGS(marked green), 
+                    our HybridSplat outperforms latest Gaussian tracing such
+                    as EnvGS, Ref-Gaussian with much faster rendering
+                    speed and fewer Gaussian primitives, while preserving similar
+                    rendering quality which is consistently better than original 3DGS 
+                    and other general splatting pipeline acceleration approaches (marked blue). The circle size
+                    represents the corresponding Gaussian primitive numbers.
+                </p>
+            </div>
+
+            <!-- Teaser Image -->
+            <div class="max-w-5xl mx-auto mb-10">
+                <div class="bg-gray-100 rounded-2xl overflow-hidden shadow-2xl border border-gray-300">
+                    <img src="teaser.webp" alt="HybridSplat Teaser Figure" class="w-full h-auto">
+                </div>
+                <p class="mt-4 text-sm text-gray-500 italic text-center w-full">
+                    Figure 2: The visual comparison results between our HybridSplat 
+                    and similar ray-tracing based Gaussian splatting like EnvGS along with the 3DGS.
+                    The rendering speed (FPS), quality (PSNR) and Gaussian primitive number (GS) are also demonstrated respectively,
+                    where 'M' is short for million.
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Abstract -->
+    <section id="abstract" class="py-12 bg-white border-b border-gray-100">
+        <div class="max-w-4xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-8 text-gray-900">Abstract</h2>
+            <p class="text-justify text-lg leading-relaxed text-gray-600">
+                Rendering complex reflection of real-world scenes using 3D Gaussian splatting has been a quite promising solution for photorealistic novel view synthesis, but still faces bottlenecks especially in rendering speed and memory storage. This paper proposes a new Hybrid Splatting (HybridSplat) mechanism for much faster complex reflection scene rendering with significantly reduced Gaussian primitives, while preserving similar level of high fidelity rendering quality compared with state-of-the-art Gaussian tracing. One novel idea within our HybridSplat is a new reflection-baked Gaussian tracing, which bakes the view-dependent reflection within each Gaussian primitive while rendering the reflection using tile-based Gaussian splatting. Thus we can hybridly integrate the reflective Gaussian primitives with base Gaussian primitives together using the efficient tile-based Gaussian splatting framework for high-fidelity complex scene rendering. Moreover, we further introduce a differentiable reflection-sensitive Gaussian pruning to reduce the Gaussian primitives for lower memory storage while preserving the reflection rendering quality. By extensive evaluation, our HybridSplat accelerates about 7x rendering speed across complex reflective scenes from Ref-NeRF, NeRF-Casting with 4x fewer Gaussian primitives than similar ray-tracing based Gaussian splatting baselines. Besides, our HybridSplat can be seamlessly integrated to pioneering general splatting pipeline acceleration frameworks for further rendering speed acceleration, providing a useful tool for complex reflective scenes rendering with state-of-the-art rendering speed and memory storage.
+            </p>
+        </div>
+    </section>
+
+    <!-- Demo Video -->
+    <section id="video" class="py-16 bg-gray-50">
+        <div class="max-w-5xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-10 text-gray-900">
+                <i class="fa-solid fa-clapperboard text-blue-600 mr-2"></i> Demo Video
+            </h2>
+            <div class="rounded-2xl overflow-hidden shadow-2xl border border-gray-200 bg-black">
+                <!-- Video Player -->
+                <video class="w-full aspect-video" controls preload="metadata">
+                    <source src="demo.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            <p class="text-center mt-4 text-gray-600">
+                This video demonstrates our pipeline and comparisons with SOTA methods.
+            </p>
+        </div>
+    </section>
+
+    <!-- Method -->
+    <section id="method" class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-16 text-gray-900">Methodology</h2>
+            
+            <div class="bg-white p-2 md:p-4 rounded-2xl shadow-lg border border-gray-100 mb-12">
+                <div class="rounded-xl overflow-hidden bg-white">
+                    <img src="pipeline.webp" alt="Pipeline" loading="lazy" class="w-full h-auto object-contain">
+                </div>
+                
+                <p class="mt-4 text-gray-600 text-center text-sm font-medium">
+                    <strong>Figure 3: Pipeline of HybridSplat.</strong> 
+                    We reconstruct complex reflective scenes with base Gaussians \(G_{base}\) 
+                    and reflective Gaussians \(G_{ref}\), where the latter bake the reflection 
+                    using a novel reflection-baked Gaussian tracing (left). These Gaussians 
+                    are efficiently rendered using our hybrid splatting including a base 
+                    splatting branch for base Gaussians and a reflective branch for 
+                    reflective Gaussians in a hybrid manner (middle). 
+                    We further perform a <em>differentiable</em> reflection-sensitive 
+                    Gaussian pruning and splatting pipeline acceleration, to adaptively 
+                    reduce the Gaussian primitives and improve the rendering speed.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Results Comparison -->
+    <section id="results" class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-6 text-gray-900">Comparative Results</h2>
+
+            <!-- Scrollable Comparison Gallery -->
+            <div class="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-inner mb-12">
+                <div class="overflow-x-auto gallery-scroll pb-4">
+                    <div class="min-w-[1000px] bg-white rounded-lg border border-gray-300 shadow-sm p-4 space-y-6">
+                        <!-- <p class="text-center mb-12 px-2 py-1">
+                            Qualitative comparison on Ref-NeRF and NeRF-Casting dataset against SOTA methods (EnvGS, 3DGS, Speedy-Splat, MetaSapiens).
+                        </p> -->
+                        <div class="p-4 border border-gray-300 rounded-xl shadow-sm mb-6">
+                            <h3 class="font-bold text-lg mb-4 text-left md:text-center">Qualitative comparison on Ref-NeRF and NeRF-Casting Shiny Scenes datasets.</h3>
+                            
+                            <!-- <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mb-2 font-semibold">Results on Datasets with Complex Reflections</span> -->
+                            <img src="experiments.webp" alt="Comparison on datasets with complex reflections" loading="lazy" class="w-full h-auto block rounded border border-gray-100">
+                            <div>
+                                <video src="grinder.mp4" class="w-full h-auto rounded border border-gray-200" autoplay loop muted playsinline preload="metadata"></video>
+                                <p class="text-center text-sm mt-1 text-gray-700">Evaluation on <em>grinder</em> scene of NeRF-Casting dataset</p>
+                            </div>
+                            <div>
+                                <video src="toaster.mp4" class="w-full h-auto rounded border border-gray-200" autoplay loop muted playsinline preload="metadata"></video>
+                                <p class="text-center text-sm mt-1 text-gray-700">Evaluation on <em>toaster</em> scene of NeRF-Casting dataset</p>
+                            </div>
+                            <p class="mt-4 text-gray-600 text-center text-sm font-medium">On datasets with complex reflections, our method achieves much faster rendering speed
+                                and fewer Gaussian primitives than EnvGS, while maintaining high image quality that is better than other 3DGS baselines.</p>
+                        </div>
+
+
+                        <hr class="border-dashed border-gray-200">
+
+                        <div class="p-4 border border-gray-300 rounded-xl shadow-sm mt-6">
+                            <h3 class="font-bold text-lg mb-4 text-left md:text-center">Qualitative comparison on Mip NeRF 360, Tanks & Temples and Deepblending datasets.</h3>
+                            
+                            <!-- <span class="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full mb-2 font-semibold">Results on Datasets without Complex Reflections</span> -->
+                            <img src="mipnerf360.webp" alt="Comparison on datasets without complex reflections 1" loading="lazy" class="w-full h-auto block rounded border border-gray-100">
+                            <img src="mipnerf360_2.webp" alt="Comparison on datasets without complex reflections 2" loading="lazy" class="w-full h-auto block rounded border border-gray-100">
+                            <div>
+                                <video src="bonsai.mp4" class="w-full h-auto rounded border border-gray-200" autoplay loop muted playsinline preload="metadata"></video>
+                                <p class="text-center text-sm mt-1 text-gray-700">Evaluation on <em>bonsai</em> scene of Mip NeRF 360 dataset</p>
+                            </div>
+                            <p class="mt-4 text-gray-600 text-center text-sm font-medium">On datasets without complex reflections, our method achieves much faster rendering speed
+                                and fewer Gaussian primitives than EnvGS, with competitive image quality compared with other 3DGS baselines.</p>
+                        </div>
+
+                        <hr class="border-dashed border-gray-200">
+
+                        <div class="p-4 border border-gray-300 rounded-xl shadow-sm mt-6">
+                            <h3 class="font-bold text-lg mb-4 text-left md:text-center">Gaussian density comparison with EnvGS.</h3>
+                            <video src="density.mp4" class="w-full h-auto rounded border border-gray-200" autoplay loop muted playsinline preload="metadata"></video>
+                            <p class="mt-4 text-gray-600 text-center text-sm font-medium">Our method uses significantly fewer Gaussian primitives than EnvGS, demonstrating the effectiveness of our reflection-sensitive Gaussian pruning.</p>
+                        </div>
+            
+                    </div>
+                </div>
+                
+            </div>
+
+            <!-- Quantitative Table -->
+            <div class="overflow-x-auto">
+                <h3 class="font-bold text-lg mb-4 text-left md:text-center">Quantitative comparison on Ref-NeRF and NeRF-Casting Shiny Scenes datasets.</h3>
+                <table class="min-w-full text-sm text-center border-collapse">
+                    <thead>
+                        <tr class="bg-gray-900 text-white">
+                            <th rowspan="2" class="py-3 px-4 rounded-tl-lg font-medium">Methods</th>
+                            <th colspan="3" class="py-3 px-4 border-l border-r border-gray-700">Ref-NeRF Real Scenes</th>
+                            <th colspan="3" class="py-3 px-4 border-l border-gray-700">NeRF-Casting Shiny Scenes</th>
+                            <th colspan="3" class="py-3 px-4 rounded-tr-lg border-l border-gray-700">Rendering Performance</th>
+                        </tr>
+                        <tr class="bg-gray-800 text-white">
+                            <th class="py-3 px-4">PSNR↑</th>
+                            <th class="py-3 px-4">SSIM↑</th>
+                            <th class="py-3 px-4 border-r border-gray-700">LPIPS↓</th>
+                            <th class="py-3 px-4">PSNR↑</th>
+                            <th class="py-3 px-4">SSIM↑</th>
+                            <th class="py-3 px-4">LPIPS↓</th>
+                            <th class="py-3 px-4">FPS↑</th>
+                            <th class="py-3 px-4">speedup</th>
+                            <th class="py-3 px-4">GS number↓</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white border border-gray-200 shadow-sm">
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="py-3 px-4 font-medium text-gray-600 text-left">3DGS</td>
+                            <td class="py-3 px-4">23.94</td>
+                            <td class="py-3 px-4">0.641</td>
+                            <td class="py-3 px-4">0.265</td>
+                            <td class="py-3 px-4">28.05</td>
+                            <td class="py-3 px-4">0.847</td>
+                            <td class="py-3 px-4">0.191</td>
+                            <td class="py-3 px-4">227.78</td>
+                            <td class="py-3 px-4">1x</td>
+                            <td class="py-3 px-4">3033253</td>
+                        </tr>
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="py-3 px-4 font-medium text-gray-600 text-left">MetaSapiens</td>
+                            <td class="py-3 px-4">24.28</td>
+                            <td class="py-3 px-4">0.629</td>
+                            <td class="py-3 px-4">0.330</td>
+                            <td class="py-3 px-4">28.43</td>
+                            <td class="py-3 px-4">0.845</td>
+                            <td class="py-3 px-4">0.205</td>
+                            <td class="py-3 px-4">1358.98</td>
+                            <td class="py-3 px-4">5.97x</td>
+                            <td class="py-3 px-4">212662</td>
+                        </tr>
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="py-3 px-4 font-medium text-gray-600 text-left">FlashGS</td>
+                            <td class="py-3 px-4">22.93</td>
+                            <td class="py-3 px-4">0.535</td>
+                            <td class="py-3 px-4">0.317</td>
+                            <td class="py-3 px-4">27.10</td>
+                            <td class="py-3 px-4">0.818</td>
+                            <td class="py-3 px-4">0.240</td>
+                            <td class="py-3 px-4">714.97</td>
+                            <td class="py-3 px-4">3.14x</td>
+                            <td class="py-3 px-4">3033253</td>
+                        </tr>
+                        <tr class="border-b-2 border-gray-400 hover:bg-gray-50 transition">
+                            <td class="py-3 px-4 font-medium text-gray-600 text-left">PUP 3D-GS</td>
+                            <td class="py-3 px-4">23.78</td>
+                            <td class="py-3 px-4">0.644</td>
+                            <td class="py-3 px-4">0.289</td>
+                            <td class="py-3 px-4">28.33</td>
+                            <td class="py-3 px-4">0.858</td>
+                            <td class="py-3 px-4">0.180</td>
+                            <td class="py-3 px-4">653.56</td>
+                            <td class="py-3 px-4">2.87x</td>
+                            <td class="py-3 px-4">606650</td>
+                        </tr>
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="py-3 px-4 font-medium text-gray-600 text-left">EnvGS</td>
+                            <td class="py-3 px-4">24.39</td>
+                            <td class="py-3 px-4">0.660</td>
+                            <td class="py-3 px-4">0.301</td>
+                            <td class="py-3 px-4">30.21</td>
+                            <td class="py-3 px-4">0.869</td>
+                            <td class="py-3 px-4 font-bold">0.158</td>
+                            <td class="py-3 px-4">15.05</td>
+                            <td class="py-3 px-4">1x</td>
+                            <td class="py-3 px-4">1408937</td>
+                        </tr>
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="py-3 px-4 font-medium text-gray-600 text-left">Ref-Gaussian</td>
+                            <td class="py-3 px-4">23.57</td>
+                            <td class="py-3 px-4">0.638</td>
+                            <td class="py-3 px-4">0.324</td>
+                            <td class="py-3 px-4">25.85</td>
+                            <td class="py-3 px-4">0.810</td>
+                            <td class="py-3 px-4">0.274</td>
+                            <td class="py-3 px-4">65.77</td>
+                            <td class="py-3 px-4">4.37x</td>
+                            <td class="py-3 px-4">592099</td>
+                        </tr>
+                        <tr class="bg-blue-50 hover:bg-blue-100 transition border-l-4 border-blue-500">
+                            <td class="py-3 px-4 text-blue-800 text-left">Ours</td>
+                            <td class="py-3 px-4 font-bold text-blue-800">24.40</td>
+                            <td class="py-3 px-4 font-bold text-blue-800">0.664</td>
+                            <td class="py-3 px-4 font-bold text-blue-800">0.280</td>
+                            <td class="py-3 px-4 font-bold text-blue-800">30.28</td>
+                            <td class="py-3 px-4 font-bold text-blue-800">0.871</td>
+                            <td class="py-3 px-4 text-blue-800">0.163</td>
+                            <td class="py-3 px-4 font-bold text-blue-800">106.98</td>
+                            <td class="py-3 px-4 font-bold text-blue-800">7.11x</td>
+                            <td class="py-3 px-4 font-bold text-blue-800">385722</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="mb-4 text-center">Our method achieves high-quality rendering while being the fastest among tracing methods. More results can be found in our paper.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Citation -->
+    <section id="bibtex" class="py-16 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-6">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">Citation</h2>
+            <p class="mb-6 text-gray-600">This paper has been accepted by ACM Multimedia (ACM MM). The official citation will be updated when the publication details become available.</p>
+            <div class="relative bg-gray-900 rounded-xl p-6 shadow-xl overflow-hidden group">
+                <button onclick="copyBibtex()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition p-2 rounded-md hover:bg-gray-700" title="Copy to Clipboard">
+                    <i class="fa-regular fa-copy"></i>
+                </button>
+                <pre class="text-gray-300 font-mono text-sm overflow-x-auto whitespace-pre-wrap leading-relaxed" id="bibtex-content">@inproceedings{liu2026hybridsplat,
+  title={HybridSplat: Fast Reflection-baked Gaussian Tracing using Hybrid Splatting},
+  author={Chang, Liu and Sichao, Wang and Jianwei, Guo and Shi-Sheng, Huang},
+  note={Accepted by ACM Multimedia (ACM MM); official citation information forthcoming}
+}</pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-100 py-10 text-center text-gray-500 text-sm">
+        <p>© 2026 HybridSplat Project. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        function copyBibtex() {
+            const content = document.getElementById('bibtex-content').innerText;
+            navigator.clipboard.writeText(content).then(() => {
+                const btn = document.querySelector('button[onclick="copyBibtex()"] i');
+                btn.className = 'fa-solid fa-check text-green-400';
+                setTimeout(() => {
+                    btn.className = 'fa-regular fa-copy';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
