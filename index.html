@@ -99,37 +99,20 @@
                 </span>
             </div>
 
-            <!-- Introduction Image -->
-            <div class="max-w-5xl mx-auto mb-10">
-                <div class="bg-gray-100 rounded-2xl overflow-hidden shadow-2xl border border-gray-300">
-                    <img src="intro.webp" alt="HybridSplat Introduction Figure" class="w-full h-auto">
+            <!-- Combined Teaser Figure -->
+            <figure class="max-w-6xl mx-auto mb-10">
+                <div class="bg-white rounded-2xl overflow-hidden shadow-2xl border border-gray-300">
+                    <img src="teaser.webp" alt="HybridSplat rendering comparisons with Ground Truth, EnvGS and 3DGS on the left, and a rendering speed versus quality comparison on the right" width="4096" height="1006" class="w-full h-auto">
                 </div>
-                <p class="mt-4 text-sm text-gray-500 italic text-center w-full">
-                    <strong>Figure 1: The novel view rendering results of our HybridSplat
-                    (left) and performance comparison with different 3D Gaussian
-                    splatting approaches (right).</strong>
-                    As ray-tracing based 3DGS(marked green), 
-                    our HybridSplat outperforms latest Gaussian tracing such
-                    as EnvGS, Ref-Gaussian with much faster rendering
-                    speed and fewer Gaussian primitives, while preserving similar
-                    rendering quality which is consistently better than original 3DGS 
-                    and other general splatting pipeline acceleration approaches (marked blue). The circle size
-                    represents the corresponding Gaussian primitive numbers.
-                </p>
-            </div>
-
-            <!-- Teaser Image -->
-            <div class="max-w-5xl mx-auto mb-10">
-                <div class="bg-gray-100 rounded-2xl overflow-hidden shadow-2xl border border-gray-300">
-                    <img src="teaser.webp" alt="HybridSplat Teaser Figure" class="w-full h-auto">
-                </div>
-                <p class="mt-4 text-sm text-gray-500 italic text-center w-full">
-                    Figure 2: The visual comparison results between our HybridSplat 
-                    and similar ray-tracing based Gaussian splatting like EnvGS along with the 3DGS.
-                    The rendering speed (FPS), quality (PSNR) and Gaussian primitive number (GS) are also demonstrated respectively,
-                    where 'M' is short for million.
-                </p>
-            </div>
+                <figcaption class="mt-4 text-sm text-gray-500 italic text-center w-full">
+                    <strong>Figure 1: Visual results and performance comparison of HybridSplat.</strong>
+                    Left: Rendering results of Ground Truth, our HybridSplat, EnvGS and 3DGS,
+                    with rendering speed (FPS), quality (PSNR) and Gaussian primitive count (GS).
+                    Right: Rendering speed and quality across Gaussian tracing (green) and
+                    non-tracing (blue) methods; circle size represents the number of Gaussian primitives.
+                    M denotes one million Gaussian primitives.
+                </figcaption>
+            </figure>
         </div>
     </header>
 
@@ -173,7 +156,7 @@
                 </div>
                 
                 <p class="mt-4 text-gray-600 text-center text-sm font-medium">
-                    <strong>Figure 3: Pipeline of HybridSplat.</strong> 
+                    <strong>Figure 2: Pipeline of HybridSplat.</strong>
                     We reconstruct complex reflective scenes with base Gaussians \(G_{base}\) 
                     and reflective Gaussians \(G_{ref}\), where the latter bake the reflection 
                     using a novel reflection-baked Gaussian tracing (left). These Gaussians 
